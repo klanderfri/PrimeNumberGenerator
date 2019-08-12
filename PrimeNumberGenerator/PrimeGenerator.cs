@@ -130,6 +130,7 @@ namespace PrimeNumberGenerator
         /// <param name="allKnownPrimes">All known primes up to this point.</param>
         /// <param name="startIndex">The index of the first prime to write.</param>
         /// <param name="amountOfPrimesToWrite">The amount of primes to write.</param>
+        /// TODO: Move to the program file and replace with event. The generator shouldn't handle file input/output.
         private void writePrimesToFile(List<BigInteger> allKnownPrimes, int startIndex, int amountOfPrimesToWrite)
         {
             //Write the primes to a file.
