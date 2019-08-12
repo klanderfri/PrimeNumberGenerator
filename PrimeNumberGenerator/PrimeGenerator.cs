@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace PrimeNumberGenerator
 {
@@ -93,10 +94,10 @@ namespace PrimeNumberGenerator
         /// <summary>
         /// Finds out if a number is a prime.
         /// </summary>
-        /// <param name="allKnownPrimes">All known primes up to this point.</param>
+        /// <param name="allKnownPrimesSortedAsc">All known primes up to this point, sorted from small to big.</param>
         /// <param name="numberToCheck">The number that may be a prime.</param>
         /// <returns>TRUE if the number is a prime, else FALSE.</returns>
-        private static bool isPrimeNumber(List<BigInteger> allKnownPrimes, BigInteger numberToCheck)
+        private static bool isPrimeNumber(IEnumerable<BigInteger> allKnownPrimesSortedAsc, BigInteger numberToCheck)
         {
             //Handle special cases.
             if (numberToCheck < 2) { return false; }
@@ -106,15 +107,20 @@ namespace PrimeNumberGenerator
             //Store if the number is a prime.
             var isPrime = true;
 
-            //Find out if the number is a prime.
-            Parallel.ForEach(allKnownPrimes, (prime, state) =>
+            //Find the primes small enough to be a factor.
+            var primesToUse = new List<BigInteger>();
+            foreach (var p in allKnownPrimesSortedAsc)
             {
-                if (prime * prime >= numberToCheck)
+                if (p * p <= numberToCheck)
                 {
-                    //NOTE: Will cause incorrect result if a big prime is used before an actual factor!
-                    state.Break();
+                    primesToUse.Add(p);
                 }
+                else { break; }
+            }
 
+            //Find out if the number is a prime.
+            Parallel.ForEach(primesToUse, (prime, state) =>
+            {
                 if (numberToCheck % prime == 0)
                 {
                     isPrime = false;
