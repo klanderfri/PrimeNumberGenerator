@@ -61,7 +61,6 @@ namespace PrimeNumberGenerator
             //Reset the generation.
             Primes.Clear();
             LastFileWrite = DateTime.Now;
-            var lastHeartbeat = DateTime.Now;
             var numberToCheck = new BigInteger(2);
 
             do
