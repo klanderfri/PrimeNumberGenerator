@@ -111,6 +111,7 @@ namespace PrimeNumberGenerator
             {
                 if (prime * prime >= numberToCheck)
                 {
+                    //NOTE: Will cause incorrect result if a big prime is used before an actual factor!
                     state.Break();
                 }
 
