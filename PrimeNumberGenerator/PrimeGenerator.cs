@@ -64,11 +64,11 @@ namespace PrimeNumberGenerator
             LastFileWrite = DateTime.Now;
             var numberToCheck = new BigInteger(0);
 
-            do
+            try
             {
-                while (!Console.KeyAvailable)
+                do
                 {
-                    try
+                    while (!Console.KeyAvailable)
                     {
                         //Check if the number is a prime.
                         bool isPrime = isPrimeNumber(Primes, numberToCheck);
@@ -90,15 +90,15 @@ namespace PrimeNumberGenerator
                         //Prepare checking the next number.
                         numberToCheck++;
                     }
-                    catch (Exception ex)
-                    {
-                        ex.Data.Add("CurrentNumberToCheck", numberToCheck);
+                } while (Console.ReadKey(true).Key != ConsoleKey.Escape);
+            }
+            catch (Exception ex)
+            {
+                ex.Data.Add("CurrentNumberToCheck", numberToCheck);
 
-                        //Rethrow the exception.
-                        throw;
-                    }
-                }
-            } while (Console.ReadKey(true).Key != ConsoleKey.Escape);
+                //Rethrow the exception.
+                throw;
+            }
         }
 
         /// <summary>
