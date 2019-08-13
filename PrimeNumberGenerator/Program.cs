@@ -58,7 +58,7 @@ namespace PrimeNumberGenerator
 
         private static void Generator_OnLoadingPrimesFromResultFileFinished(object generator, LoadingPrimesFromResultFileFinishedArgs args)
         {
-            var format = "Prime numbers loading finished. {0} primes were loaded from {1} files.";
+            var format = "Prime number loading finished. {0} primes were loaded from {1} files.";
             var message = String.Format(format, args.NumberOfPrimesLoaded, args.NumberOfResultFilesLoaded);
             Console.WriteLine(message);
         }
