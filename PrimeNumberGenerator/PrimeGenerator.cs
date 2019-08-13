@@ -175,7 +175,7 @@ namespace PrimeNumberGenerator
                 if (numberToCheck % prime == 0)
                 {
                     isPrime = false;
-                    state.Break();
+                    state.Stop();
                 }
             });
 
