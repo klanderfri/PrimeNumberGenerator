@@ -206,11 +206,15 @@ namespace PrimeNumberGenerator
             NextFileIndex++;
         }
 
+        /// <summary>
+        /// Fetches prime numbers from existing result files.
+        /// </summary>
+        /// <returns>The already generated primes.</returns>
         private static List<BigInteger> fetchExistingPrimes()
         {
             var primes = new List<BigInteger>((int)Math.Pow(2, 20));
 
-            foreach (var file in fetchResultFileNames())
+            foreach (var file in fetchResultFilePaths())
             {
                 var subPrimes = File
                     .ReadAllLines(file)
@@ -222,7 +226,11 @@ namespace PrimeNumberGenerator
             return primes;
         }
 
-        private static List<string> fetchResultFileNames()
+        /// <summary>
+        /// Fetches the file paths of existing result files.
+        /// </summary>
+        /// <returns>The paths to the existing result files.</returns>
+        private static List<string> fetchResultFilePaths()
         {
             var files = new SortedDictionary<int, string>();
 
