@@ -97,7 +97,7 @@ namespace PrimeNumberGenerator
         /// <param name="allKnownPrimesSortedAsc">All known primes up to this point, sorted from small to big.</param>
         /// <param name="numberToCheck">The number that may be a prime.</param>
         /// <returns>TRUE if the number is a prime, else FALSE.</returns>
-        private static bool isPrimeNumber(IEnumerable<BigInteger> allKnownPrimesSortedAsc, BigInteger numberToCheck)
+        private static bool isPrimeNumber(List<BigInteger> allKnownPrimesSortedAsc, BigInteger numberToCheck)
         {
             //Handle special cases.
             if (numberToCheck < 2) { return false; }
@@ -108,15 +108,7 @@ namespace PrimeNumberGenerator
             var isPrime = true;
 
             //Find the primes small enough to be a factor.
-            var primesToUse = new List<BigInteger>();
-            foreach (var p in allKnownPrimesSortedAsc)
-            {
-                if (p * p <= numberToCheck)
-                {
-                    primesToUse.Add(p);
-                }
-                else { break; }
-            }
+            List<BigInteger> primesToUse = findPrimesToUse(allKnownPrimesSortedAsc, numberToCheck);
 
             //Find out if the number is a prime.
             Parallel.ForEach(primesToUse, (prime, state) =>
@@ -129,6 +121,48 @@ namespace PrimeNumberGenerator
             });
 
             return isPrime;
+        }
+
+        /// <summary>
+        /// Finds the primes needed to check if a certain number is a prime.
+        /// </summary>
+        /// <param name="allKnownPrimesSortedAsc">All known primes up to this point, sorted from small to big.</param>
+        /// <param name="numberToCheck">The number that may be a prime.</param>
+        /// <returns>A List of primes needed to check if a certain number is a prime.</returns>
+        private static List<BigInteger> findPrimesToUse(List<BigInteger> allKnownPrimesSortedAsc, BigInteger numberToCheck)
+        {
+            if (allKnownPrimesSortedAsc.Count < 2)
+            {
+                return allKnownPrimesSortedAsc;
+            }
+
+            var primesToUse = new List<BigInteger>();
+
+            var upperLimit = allKnownPrimesSortedAsc.Count() - 1;
+            var lowerLimit = 0;
+
+            do
+            {
+                var middleIndex = (upperLimit - lowerLimit) / 2 + lowerLimit;
+                var middlePrime = allKnownPrimesSortedAsc.ElementAt(middleIndex);
+                var square = middlePrime * middlePrime;
+
+                if (square < numberToCheck)
+                {
+                    lowerLimit = middleIndex;
+                }
+                else if (square > numberToCheck)
+                {
+                    upperLimit = middleIndex;
+                }
+                else //They are equal.
+                {
+                    return new List<BigInteger>() { middlePrime };
+                }
+
+            } while (upperLimit - lowerLimit > 1);
+
+            return allKnownPrimesSortedAsc.GetRange(0, upperLimit);
         }
 
         /// <summary>
