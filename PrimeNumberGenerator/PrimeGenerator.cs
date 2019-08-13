@@ -49,7 +49,7 @@ namespace PrimeNumberGenerator
         /// </summary>
         public PrimeGenerator(int numberOfPrimesInFile)
         {
-            Primes = new List<BigInteger>(1048576);
+            Primes = new List<BigInteger>((int)Math.Pow(2, 20));
             NextFileIndex = 1;
             NumberOfPrimesInFile = numberOfPrimesInFile;
         }
@@ -62,7 +62,7 @@ namespace PrimeNumberGenerator
             //Reset the generation.
             Primes.Clear();
             LastFileWrite = DateTime.Now;
-            var numberToCheck = new BigInteger(2);
+            var numberToCheck = new BigInteger(0);
 
             do
             {
