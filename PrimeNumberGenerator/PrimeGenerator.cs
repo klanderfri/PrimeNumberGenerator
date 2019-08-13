@@ -40,9 +40,21 @@ namespace PrimeNumberGenerator
         public delegate void PrimesWrittenToFileHandler(object generator, PrimesWrittenToFileArgs args);
 
         /// <summary>
+        /// Handler for the OnPrimeGenerationStarted-event.
+        /// </summary>
+        /// <param name="generator">The generator that has started generating prime numbers.</param>
+        /// <param name="args">The information about the event.</param>
+        public delegate void PrimeGenerationStartedHandler(object generator, PrimeGenerationStartedArgs args);
+
+        /// <summary>
         /// Event raised when primes are written to a result-file.
         /// </summary>
         public event PrimesWrittenToFileHandler OnPrimesWrittenToFile;
+
+        /// <summary>
+        /// Event raised when the prime number generation has started.
+        /// </summary>
+        public event PrimeGenerationStartedHandler OnPrimeGenerationStarted;
 
         /// <summary>
         /// The string the filenames of all prime number result files will start with.
@@ -70,6 +82,9 @@ namespace PrimeNumberGenerator
 
             try
             {
+                //Inform the subscriber that the prime number generation has started.
+                OnPrimeGenerationStarted?.Invoke(this, new PrimeGenerationStartedArgs());
+
                 do
                 {
                     while (!Console.KeyAvailable)
@@ -199,7 +214,7 @@ namespace PrimeNumberGenerator
             var duration = DateTime.Now - LastFileWrite;
             LastFileWrite = DateTime.Now;
 
-            //Write information message for user.
+            //Inform the subscriber that a result file was created.
             var args = new PrimesWrittenToFileArgs(NextFileIndex, startIndex, startIndex + amountOfPrimesToWrite - 1, DateTime.Now, duration);
             OnPrimesWrittenToFile?.Invoke(this, args);
 

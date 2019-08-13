@@ -9,11 +9,11 @@ namespace PrimeNumberGenerator
         static void Main(string[] args)
         {
             var generator = new PrimeGenerator(10000);
+            generator.OnPrimeGenerationStarted += Generator_OnPrimeGenerationStarted;
             generator.OnPrimesWrittenToFile += Generator_OnPrimesWrittenToFile;
 
             Console.WriteLine("Press ESC to stop.");
-            Console.WriteLine("Generating prime numbers...");
-
+            
             try
             {
                 generator.GeneratePrimes();
@@ -46,6 +46,11 @@ namespace PrimeNumberGenerator
                 
                 stream.WriteLine(message.ToString());
             }
+        }
+
+        private static void Generator_OnPrimeGenerationStarted(object generator, PrimeGenerationStartedArgs args)
+        {
+            Console.WriteLine("Generating prime numbers...");
         }
 
         private static void Generator_OnPrimesWrittenToFile(object generator, PrimesWrittenToFileArgs args)
