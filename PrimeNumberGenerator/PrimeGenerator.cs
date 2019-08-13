@@ -155,7 +155,7 @@ namespace PrimeNumberGenerator
                 {
                     upperLimit = middleIndex;
                 }
-                else //They are equal.
+                else //They are equal, we accidentally found a factor.
                 {
                     return new List<BigInteger>() { middlePrime };
                 }
