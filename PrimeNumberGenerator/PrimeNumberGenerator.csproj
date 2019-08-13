@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="PrimeGenerationStartedArgs.cs" />
     <Compile Include="PrimeGenerator.cs" />
     <Compile Include="PrimesWrittenToFileArgs.cs" />
     <Compile Include="Program.cs" />
