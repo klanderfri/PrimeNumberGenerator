@@ -136,8 +136,6 @@ namespace PrimeNumberGenerator
                 return allKnownPrimesSortedAsc;
             }
 
-            var primesToUse = new List<BigInteger>();
-
             var upperLimit = allKnownPrimesSortedAsc.Count() - 1;
             var lowerLimit = 0;
 
