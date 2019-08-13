@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace PrimeNumberGenerator
+namespace PrimeNumberGenerator.EventArgs
 {
-    public class PrimesWrittenToFileArgs : EventArgs
+    public class PrimesWrittenToFileArgs : System.EventArgs
     {
         public int FileIndex { get; private set; }
         public int StartPrimeIndex { get; private set; }

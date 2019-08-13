@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PrimeNumberGenerator.EventArgs;
+using System;
 using System.IO;
 using System.Text;
 

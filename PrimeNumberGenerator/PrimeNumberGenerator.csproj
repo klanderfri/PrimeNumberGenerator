@@ -43,16 +43,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="LoadingPrimesFromResultFileFinishedArgs.cs" />
-    <Compile Include="LoadingPrimesFromResultFileStartedArgs.cs" />
-    <Compile Include="PrimeGenerationStartedArgs.cs" />
+    <Compile Include="EventArgs\LoadingPrimesFromResultFileFinishedArgs.cs" />
+    <Compile Include="EventArgs\LoadingPrimesFromResultFileStartedArgs.cs" />
+    <Compile Include="EventArgs\PrimeGenerationStartedArgs.cs" />
     <Compile Include="PrimeGenerator.cs" />
-    <Compile Include="PrimesWrittenToFileArgs.cs" />
+    <Compile Include="EventArgs\PrimesWrittenToFileArgs.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
