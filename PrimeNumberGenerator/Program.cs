@@ -58,9 +58,16 @@ namespace PrimeNumberGenerator
 
         private static void Generator_OnLoadingPrimesFromResultFileFinished(object generator, LoadingPrimesFromResultFileFinishedArgs args)
         {
-            var format = "Prime number loading finished. {0} primes were loaded from {1} files.";
-            var message = String.Format(format, args.NumberOfPrimesLoaded, args.NumberOfResultFilesLoaded);
-            Console.WriteLine(message);
+            if (args.NumberOfResultFilesLoaded == 0)
+            {
+                Console.WriteLine("No existing result files were found. The generation will start from scratch.");
+            }
+            else
+            {
+                var format = "Prime number loading finished. {0} primes were loaded from {1} files.";
+                var message = String.Format(format, args.NumberOfPrimesLoaded, args.NumberOfResultFilesLoaded);
+                Console.WriteLine(message);
+            }
         }
 
         private static void Generator_OnPrimeGenerationStarted(object generator, PrimeGenerationStartedArgs args)
