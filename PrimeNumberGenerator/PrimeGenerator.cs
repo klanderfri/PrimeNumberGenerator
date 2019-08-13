@@ -68,25 +68,35 @@ namespace PrimeNumberGenerator
             {
                 while (!Console.KeyAvailable)
                 {
-                    //Check if the number is a prime.
-                    bool isPrime = isPrimeNumber(Primes, numberToCheck);
-
-                    //Handle prime find.
-                    if (isPrime)
+                    try
                     {
-                        //Add the prime to the list.
-                        Primes.Add(numberToCheck);
+                        //Check if the number is a prime.
+                        bool isPrime = isPrimeNumber(Primes, numberToCheck);
 
-                        //Write the primes to a file for reading by the user.
-                        if (Primes.Count % NumberOfPrimesInFile == 0)
+                        //Handle prime find.
+                        if (isPrime)
                         {
-                            var startIndex = NumberOfPrimesInFile * NextFileIndex - NumberOfPrimesInFile;
-                            writePrimesToFile(Primes, startIndex, NumberOfPrimesInFile);
-                        }
-                    }
+                            //Add the prime to the list.
+                            Primes.Add(numberToCheck);
 
-                    //Prepare checking the next number.
-                    numberToCheck++;
+                            //Write the primes to a file for reading by the user.
+                            if (Primes.Count % NumberOfPrimesInFile == 0)
+                            {
+                                var startIndex = NumberOfPrimesInFile * NextFileIndex - NumberOfPrimesInFile;
+                                writePrimesToFile(Primes, startIndex, NumberOfPrimesInFile);
+                            }
+                        }
+
+                        //Prepare checking the next number.
+                        numberToCheck++;
+                    }
+                    catch (Exception ex)
+                    {
+                        ex.Data.Add("CurrentNumberToCheck", numberToCheck);
+
+                        //Rethrow the exception.
+                        throw;
+                    }
                 }
             } while (Console.ReadKey(true).Key != ConsoleKey.Escape);
         }

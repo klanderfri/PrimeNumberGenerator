@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Text;
 
 namespace PrimeNumberGenerator
 {
@@ -11,7 +13,39 @@ namespace PrimeNumberGenerator
 
             Console.WriteLine("Press ESC to stop.");
             Console.WriteLine("Generating prime numbers...");
-            generator.GeneratePrimes();
+
+            try
+            {
+                generator.GeneratePrimes();
+            }
+            catch (Exception ex)
+            {
+                writeErrorLogFile(ex);
+            }
+        }
+
+        private static void writeErrorLogFile(Exception ex)
+        {
+            using (var stream = new StreamWriter("GeneratorFailureLog.txt"))
+            {
+                var message = new StringBuilder();
+                message.AppendFormat("Time: {0}", DateTime.Now);
+                message.AppendLine();
+                message.AppendFormat("Error: {0}", ex.GetType().Name);
+                message.AppendLine();
+                message.AppendFormat("Message: {0}", ex.Message);
+                message.AppendLine();
+                if (ex.Data.Contains("CurrentNumberToCheck"))
+                {
+                    message.AppendFormat("Current number to check: {0}", ex.Data["CurrentNumberToCheck"]);
+                    message.AppendLine();
+                }
+                message.AppendFormat("Source: {0}", ex.Source);
+                message.AppendLine();
+                message.AppendFormat("Stack Trace:\n{0}", ex.StackTrace);
+                
+                stream.WriteLine(message.ToString());
+            }
         }
 
         private static void Generator_OnPrimesWrittenToFile(object generator, PrimesWrittenToFileArgs args)
