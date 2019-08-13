@@ -33,11 +33,18 @@ namespace PrimeNumberGenerator
         public List<BigInteger> Primes { get; private set; }
 
         /// <summary>
-        /// Handler for the OnPrimesWrittenToFile-event.
+        /// Handler for the OnLoadingPrimesFromResultFileStarted-event.
         /// </summary>
-        /// <param name="generator">The generator causing the result-file to be written.</param>
+        /// <param name="generator">The generator that has started loading prime numbers.</param>
         /// <param name="args">The information about the event.</param>
-        public delegate void PrimesWrittenToFileHandler(object generator, PrimesWrittenToFileArgs args);
+        public delegate void LoadingPrimesFromResultFileStartedHandler(object generator, LoadingPrimesFromResultFileStartedArgs args);
+
+        /// <summary>
+        /// Handler for the OnLoadingPrimesFromResultFileFinished-event.
+        /// </summary>
+        /// <param name="generator">The generator that has finished loading prime numbers.</param>
+        /// <param name="args">The information about the event.</param>
+        public delegate void LoadingPrimesFromResultFileFinishedHandler(object generator, LoadingPrimesFromResultFileFinishedArgs args);
 
         /// <summary>
         /// Handler for the OnPrimeGenerationStarted-event.
@@ -47,14 +54,31 @@ namespace PrimeNumberGenerator
         public delegate void PrimeGenerationStartedHandler(object generator, PrimeGenerationStartedArgs args);
 
         /// <summary>
-        /// Event raised when primes are written to a result-file.
+        /// Handler for the OnPrimesWrittenToFile-event.
         /// </summary>
-        public event PrimesWrittenToFileHandler OnPrimesWrittenToFile;
+        /// <param name="generator">The generator causing the result-file to be written.</param>
+        /// <param name="args">The information about the event.</param>
+        public delegate void PrimesWrittenToFileHandler(object generator, PrimesWrittenToFileArgs args);
+
+        /// <summary>
+        /// Event raised when the generator has started loading primes from exisiting result files.
+        /// </summary>
+        public event LoadingPrimesFromResultFileStartedHandler OnLoadingPrimesFromResultFileStarted;
+
+        /// <summary>
+        /// Event raised when the generator has finished loading primes from exisiting result files.
+        /// </summary>
+        public event LoadingPrimesFromResultFileFinishedHandler OnLoadingPrimesFromResultFileFinished;
 
         /// <summary>
         /// Event raised when the prime number generation has started.
         /// </summary>
         public event PrimeGenerationStartedHandler OnPrimeGenerationStarted;
+
+        /// <summary>
+        /// Event raised when primes are written to a result-file.
+        /// </summary>
+        public event PrimesWrittenToFileHandler OnPrimesWrittenToFile;
 
         /// <summary>
         /// The string the filenames of all prime number result files will start with.
@@ -74,11 +98,16 @@ namespace PrimeNumberGenerator
         /// </summary>
         public void GeneratePrimes()
         {
-            //Reset the generation.
+            //Load existing primes.
+            OnLoadingPrimesFromResultFileStarted?.Invoke(this, new LoadingPrimesFromResultFileStartedArgs());
             Primes = fetchExistingPrimes();
+            var loadingFinishedArgs = new LoadingPrimesFromResultFileFinishedArgs(Primes.Count, Primes.Count / NumberOfPrimesInFile);
+            OnLoadingPrimesFromResultFileFinished?.Invoke(this, loadingFinishedArgs);
+
+            //Setup variables for prime number generation.
             NextFileIndex = Primes.Count / NumberOfPrimesInFile + 1;
-            LastFileWrite = DateTime.Now;
             var numberToCheck = Primes.LastOrDefault() + 1;
+            LastFileWrite = DateTime.Now;
 
             try
             {

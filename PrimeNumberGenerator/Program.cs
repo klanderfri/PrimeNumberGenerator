@@ -9,6 +9,8 @@ namespace PrimeNumberGenerator
         static void Main(string[] args)
         {
             var generator = new PrimeGenerator(10000);
+            generator.OnLoadingPrimesFromResultFileStarted += Generator_OnLoadingPrimesFromResultFileStarted;
+            generator.OnLoadingPrimesFromResultFileFinished += Generator_OnLoadingPrimesFromResultFileFinished;
             generator.OnPrimeGenerationStarted += Generator_OnPrimeGenerationStarted;
             generator.OnPrimesWrittenToFile += Generator_OnPrimesWrittenToFile;
 
@@ -46,6 +48,18 @@ namespace PrimeNumberGenerator
                 
                 stream.WriteLine(message.ToString());
             }
+        }
+
+        private static void Generator_OnLoadingPrimesFromResultFileStarted(object generator, LoadingPrimesFromResultFileStartedArgs args)
+        {
+            Console.WriteLine("Loading prime numbers from existing result files...");
+        }
+
+        private static void Generator_OnLoadingPrimesFromResultFileFinished(object generator, LoadingPrimesFromResultFileFinishedArgs args)
+        {
+            var format = "Prime numbers loading finished. {0} primes were loaded from {1} files.";
+            var message = String.Format(format, args.NumberOfPrimesLoaded, args.NumberOfResultFilesLoaded);
+            Console.WriteLine(message);
         }
 
         private static void Generator_OnPrimeGenerationStarted(object generator, PrimeGenerationStartedArgs args)

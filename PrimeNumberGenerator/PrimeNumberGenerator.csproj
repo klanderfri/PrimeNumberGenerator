@@ -43,6 +43,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="LoadingPrimesFromResultFileFinishedArgs.cs" />
+    <Compile Include="LoadingPrimesFromResultFileStartedArgs.cs" />
     <Compile Include="PrimeGenerationStartedArgs.cs" />
     <Compile Include="PrimeGenerator.cs" />
     <Compile Include="PrimesWrittenToFileArgs.cs" />
