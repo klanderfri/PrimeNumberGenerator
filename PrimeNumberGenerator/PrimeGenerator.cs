@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
-using System.Linq;
 
 namespace PrimeNumberGenerator
 {
@@ -16,7 +16,7 @@ namespace PrimeNumberGenerator
         /// The amount of primes to put in each result-file.
         /// </summary>
         private readonly int NumberOfPrimesInFile;
-        
+
         /// <summary>
         /// The index of the next result-file.
         /// </summary>
@@ -45,12 +45,15 @@ namespace PrimeNumberGenerator
         public event PrimesWrittenToFileHandler OnPrimesWrittenToFile;
 
         /// <summary>
+        /// The string the filenames of all prime number result files will start with.
+        /// </summary>
+        public const string RESULT_FILE_NAME_START = "PrimeNumbers";
+
+        /// <summary>
         /// Creates an object generating prime numbers.
         /// </summary>
         public PrimeGenerator(int numberOfPrimesInFile)
         {
-            Primes = new List<BigInteger>((int)Math.Pow(2, 20));
-            NextFileIndex = 1;
             NumberOfPrimesInFile = numberOfPrimesInFile;
         }
 
@@ -60,9 +63,10 @@ namespace PrimeNumberGenerator
         public void GeneratePrimes()
         {
             //Reset the generation.
-            Primes.Clear();
+            Primes = fetchExistingPrimes();
+            NextFileIndex = Primes.Count / NumberOfPrimesInFile + 1;
             LastFileWrite = DateTime.Now;
-            var numberToCheck = new BigInteger(0);
+            var numberToCheck = Primes.LastOrDefault() + 1;
 
             try
             {
@@ -184,7 +188,7 @@ namespace PrimeNumberGenerator
         {
             //Write the primes to a file.
             var primesToWrite = allKnownPrimes.GetRange(startIndex, amountOfPrimesToWrite);
-            var filename = String.Format("PrimeNumbers{0}.txt", NextFileIndex);
+            var filename = String.Format("{0}{1}.txt", RESULT_FILE_NAME_START, NextFileIndex);
             using (var stream = new StreamWriter(filename))
             {
                 foreach (var prime in primesToWrite)
@@ -200,6 +204,58 @@ namespace PrimeNumberGenerator
             OnPrimesWrittenToFile?.Invoke(this, args);
 
             NextFileIndex++;
+        }
+
+        private static List<BigInteger> fetchExistingPrimes()
+        {
+            var primes = new List<BigInteger>((int)Math.Pow(2, 20));
+
+            foreach (var file in fetchResultFileNames())
+            {
+                var subPrimes = File
+                    .ReadAllLines(file)
+                    .Select(l => BigInteger.Parse(l));
+
+                primes.AddRange(subPrimes);
+            }
+
+            return primes;
+        }
+
+        private static List<string> fetchResultFileNames()
+        {
+            var files = new SortedDictionary<int, string>();
+
+            var allFiles = Directory.GetFiles(Directory.GetCurrentDirectory());
+            foreach (var filepath in allFiles)
+            {
+                var fileName = Path.GetFileNameWithoutExtension(filepath);
+
+                if (fileName.Length <= RESULT_FILE_NAME_START.Length
+                    || !fileName.StartsWith(RESULT_FILE_NAME_START)
+                    || Path.GetExtension(filepath) != ".txt")
+                {
+                    continue;
+                }
+
+                var fileID = fileName.Substring(RESULT_FILE_NAME_START.Length);
+                int fileNumber;
+
+                if (!int.TryParse(fileID, out fileNumber))
+                {
+                    continue;
+                }
+
+                files.Add(fileNumber, filepath);
+            }
+
+            var i = 1;
+            var consecutiveFiles = files
+                .Where(f => f.Key == i++)
+                .Select(f => f.Value)
+                .ToList();
+
+            return consecutiveFiles;
         }
     }
 }
