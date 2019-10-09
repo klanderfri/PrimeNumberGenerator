@@ -46,6 +46,7 @@
     <Compile Include="EventArgs\LoadingPrimesFromResultFileFinishedArgs.cs" />
     <Compile Include="EventArgs\LoadingPrimesFromResultFileStartedArgs.cs" />
     <Compile Include="EventArgs\PrimeGenerationStartedArgs.cs" />
+    <Compile Include="EventArgs\PrimesLoadingFromFile.cs" />
     <Compile Include="PrimeGenerator.cs" />
     <Compile Include="EventArgs\PrimesWrittenToFileArgs.cs" />
     <Compile Include="Program.cs" />

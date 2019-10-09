@@ -14,7 +14,9 @@ namespace PrimeNumberGenerator
             generator.OnLoadingPrimesFromResultFileFinished += Generator_OnLoadingPrimesFromResultFileFinished;
             generator.OnPrimeGenerationStarted += Generator_OnPrimeGenerationStarted;
             generator.OnPrimesWrittenToFile += Generator_OnPrimesWrittenToFile;
+            generator.OnLoadingPrimesFromFile += Generator_OnLoadingPrimesFromFile;
 
+            Console.CursorVisible = false;
             Console.WriteLine("Press ESC to stop.");
             
             try
@@ -79,6 +81,19 @@ namespace PrimeNumberGenerator
         {
             var format = "{0}. Wrote primes #{1} to #{2} to file at {3} (generation time: {4} sec).";
             var message = String.Format(format, args.FileIndex, args.StartPrimeIndex + 1, args.EndPrimeIndex + 1, args.WriteTime, args.GenerationDuration.TotalSeconds);
+            Console.WriteLine(message);
+        }
+
+        private static void Generator_OnLoadingPrimesFromFile(object generator, PrimesLoadingFromFile args)
+        {
+            if (args.IndexOfFileToBeLoaded == 0)
+            {
+                Console.WriteLine();
+            }
+
+            var format = "Loading file {0} of {1}...";
+            var message = String.Format(format, args.IndexOfFileToBeLoaded + 1, args.TotalAmountOfFiles);
+            Console.SetCursorPosition(0, Console.CursorTop - 1);
             Console.WriteLine(message);
         }
     }
