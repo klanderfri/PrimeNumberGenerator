@@ -349,7 +349,7 @@ namespace PrimeNumberGenerator
         /// Fetches prime numbers from existing result files.
         /// </summary>
         /// <returns>Tuple telling if the generation should continue, and holding the already generated primes.</returns>
-        private static Tuple<bool, List<BigInteger>> fetchExistingPrimes()
+        private Tuple<bool, List<BigInteger>> fetchExistingPrimes()
         {
             var primes = new List<BigInteger>((int)Math.Pow(2, 20));
 
