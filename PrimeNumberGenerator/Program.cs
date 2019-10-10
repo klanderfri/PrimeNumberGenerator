@@ -9,7 +9,7 @@ namespace PrimeNumberGenerator
     {
         static void Main(string[] args)
         {
-            var generator = new PrimeGenerator(10000);
+            var generator = new PrimeGenerator();
             generator.OnLoadingPrimesFromResultFileStarted += Generator_OnLoadingPrimesFromResultFileStarted;
             generator.OnLoadingPrimesFromResultFileFinished += Generator_OnLoadingPrimesFromResultFileFinished;
             generator.OnPrimeGenerationStarted += Generator_OnPrimeGenerationStarted;

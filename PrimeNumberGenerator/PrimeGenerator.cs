@@ -14,11 +14,6 @@ namespace PrimeNumberGenerator
     public class PrimeGenerator
     {
         /// <summary>
-        /// The amount of primes to put in each result-file.
-        /// </summary>
-        private readonly int NumberOfPrimesInFile;
-
-        /// <summary>
         /// The index of the next result-file.
         /// </summary>
         private int NextFileIndex;
@@ -38,19 +33,28 @@ namespace PrimeNumberGenerator
         /// </summary>
         private bool MemoryLimitReached { get; set; }
 
+        #region Events
+
         /// <summary>
         /// Handler for the OnLoadingPrimesFromResultFileStarted-event.
         /// </summary>
-        /// <param name="generator">The generator that has started loading prime numbers.</param>
+        /// <param name="loader">The loader that has started loading prime numbers.</param>
         /// <param name="args">The information about the event.</param>
-        public delegate void LoadingPrimesFromResultFileStartedHandler(object generator, LoadingPrimesFromResultFileStartedArgs args);
+        public delegate void LoadingPrimesFromResultFileStartedHandler(object loader, LoadingPrimesFromResultFileStartedArgs args);
 
         /// <summary>
         /// Handler for the OnLoadingPrimesFromResultFileFinished-event.
         /// </summary>
-        /// <param name="generator">The generator that has finished loading prime numbers.</param>
+        /// <param name="loader">The loader that has finished loading prime numbers.</param>
         /// <param name="args">The information about the event.</param>
-        public delegate void LoadingPrimesFromResultFileFinishedHandler(object generator, LoadingPrimesFromResultFileFinishedArgs args);
+        public delegate void LoadingPrimesFromResultFileFinishedHandler(object loader, LoadingPrimesFromResultFileFinishedArgs args);
+
+        /// <summary>
+        /// Handler for the OnLoadingPrimesFromFile-event.
+        /// </summary>
+        /// <param name="loader">The loader causing the primes being loaded.</param>
+        /// <param name="args">The information about the event.</param>
+        public delegate void LoadingPrimesFromFileHandler(object loader, PrimesLoadingFromFile args);
 
         /// <summary>
         /// Handler for the OnPrimeGenerationStarted-event.
@@ -67,13 +71,6 @@ namespace PrimeNumberGenerator
         public delegate void PrimesWrittenToFileHandler(object generator, PrimesWrittenToFileArgs args);
 
         /// <summary>
-        /// Handler for the OnLoadingPrimesFromFile-event.
-        /// </summary>
-        /// <param name="generator">The generator causing the primes being loaded.</param>
-        /// <param name="args">The information about the event.</param>
-        public delegate void LoadingPrimesFromFileHandler(object generator, PrimesLoadingFromFile args);
-
-        /// <summary>
         /// Event raised when the generator has started loading primes from exisiting result files.
         /// </summary>
         public event LoadingPrimesFromResultFileStartedHandler OnLoadingPrimesFromResultFileStarted;
@@ -82,6 +79,11 @@ namespace PrimeNumberGenerator
         /// Event raised when the generator has finished loading primes from exisiting result files.
         /// </summary>
         public event LoadingPrimesFromResultFileFinishedHandler OnLoadingPrimesFromResultFileFinished;
+
+        /// <summary>
+        /// Event raised when primes are to be loaded from a result file.
+        /// </summary>
+        public event LoadingPrimesFromFileHandler OnLoadingPrimesFromFile;
 
         /// <summary>
         /// Event raised when the prime number generation has started.
@@ -93,22 +95,13 @@ namespace PrimeNumberGenerator
         /// </summary>
         public event PrimesWrittenToFileHandler OnPrimesWrittenToFile;
 
-        /// <summary>
-        /// Event raised when primes are to be loaded from a result file.
-        /// </summary>
-        public event LoadingPrimesFromFileHandler OnLoadingPrimesFromFile;
-
-        /// <summary>
-        /// The string the filenames of all prime number result files will start with.
-        /// </summary>
-        public const string RESULT_FILE_NAME_START = "PrimeNumbers";
+        #endregion
 
         /// <summary>
         /// Creates an object generating prime numbers.
         /// </summary>
-        public PrimeGenerator(int numberOfPrimesInFile)
+        public PrimeGenerator()
         {
-            NumberOfPrimesInFile = numberOfPrimesInFile;
             MemoryLimitReached = false;
         }
 
@@ -118,18 +111,22 @@ namespace PrimeNumberGenerator
         public void GeneratePrimes()
         {
             //Load existing primes.
-            OnLoadingPrimesFromResultFileStarted?.Invoke(this, new LoadingPrimesFromResultFileStartedArgs());
-            var existingPrimes = fetchExistingPrimes();
-            if (!existingPrimes.Item1) { return; }
-            Primes = existingPrimes.Item2;
-            var numberToCheck = existingPrimes.Item3;
+            var loader = new ExistingPrimesLoader();
+            loader.OnLoadingPrimesFromResultFileStarted += Loader_OnLoadingPrimesFromResultFileStarted;
+            loader.OnLoadingPrimesFromResultFileFinished += Loader_OnLoadingPrimesFromResultFileFinished;
+            loader.OnLoadingPrimesFromFile += Loader_OnLoadingPrimesFromFile;
+            var loadResult = loader.FetchExistingPrimes();
+            
+            //End the execution if the user aborted it.
+            if (loadResult.ExecutionWasAborted) { return; }
 
-            //Tell the user that the loading finished.
-            var loadingFinishedArgs = new LoadingPrimesFromResultFileFinishedArgs(Primes.Count, Primes.Count / NumberOfPrimesInFile);
-            OnLoadingPrimesFromResultFileFinished?.Invoke(this, loadingFinishedArgs);
+            //Extract the data from the loading result.
+            Primes = loadResult.CachedPrimes;
+            MemoryLimitReached = loadResult.MemoryLimitReached;
+            NextFileIndex = loadResult.IndexOfLastResultFileToStoreIn;
+            var numberToCheck = loadResult.NextNumberToCheck;
 
             //Setup variables for prime number generation.
-            NextFileIndex = Primes.Count / NumberOfPrimesInFile + 1;
             LastFileWrite = DateTime.Now;
             bool isPrime = false;
 
@@ -157,7 +154,7 @@ namespace PrimeNumberGenerator
                             }
                             catch (OutOfMemoryException ex)
                             {
-                                if (memoryIsFilledWithPrimes(ex))
+                                if (Tools.MemoryIsFilledWithPrimes(ex))
                                 {
                                     //We have reached the limit for how many primes the computer memory can hold.
                                     MemoryLimitReached = true;
@@ -173,10 +170,10 @@ namespace PrimeNumberGenerator
                             }
 
                             //Write the primes to a file for reading by the user.
-                            if (Primes.Count % NumberOfPrimesInFile == 0)
+                            if (Primes.Count % Configuration.NumberOfPrimesInFile == 0)
                             {
-                                var startIndex = NumberOfPrimesInFile * NextFileIndex - NumberOfPrimesInFile;
-                                writePrimesToFile(Primes, startIndex, NumberOfPrimesInFile, NextFileIndex, false);
+                                var startIndex = Configuration.NumberOfPrimesInFile * NextFileIndex - Configuration.NumberOfPrimesInFile;
+                                writePrimesToFile(Primes, startIndex, Configuration.NumberOfPrimesInFile, NextFileIndex, false);
                                 NextFileIndex++;
                             }
                         }
@@ -194,7 +191,7 @@ namespace PrimeNumberGenerator
 
                     //Store the unstored primes.
                     long amountOfPrimesFound = Primes.Count;
-                    var amountOfUnstoredPrimes = Primes.Count % NumberOfPrimesInFile;
+                    var amountOfUnstoredPrimes = Primes.Count % Configuration.NumberOfPrimesInFile;
                     if (amountOfUnstoredPrimes > 0)
                     {
                         var indexOfFirstUnstoredPrime = Primes.Count - amountOfUnstoredPrimes;
@@ -206,7 +203,7 @@ namespace PrimeNumberGenerator
                     amountOfPrimesFound++;
 
                     //Check if we have filled the file and need to continue on another.
-                    if (amountOfPrimesFound % NumberOfPrimesInFile == 0)
+                    if (amountOfPrimesFound % Configuration.NumberOfPrimesInFile == 0)
                     {
                         NextFileIndex++;
                     }
@@ -226,6 +223,36 @@ namespace PrimeNumberGenerator
                 //Rethrow the exception.
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Handles the OnLoadingPrimesFromResultFileStarted for the object loading existing prime numbers.
+        /// </summary>
+        /// <param name="loader">The object loading the existing prime numbers.</param>
+        /// <param name="args">The information about the event.</param>
+        private void Loader_OnLoadingPrimesFromResultFileStarted(object loader, LoadingPrimesFromResultFileStartedArgs args)
+        {
+            OnLoadingPrimesFromResultFileStarted?.Invoke(loader, args);
+        }
+
+        /// <summary>
+        /// Handles the OnLoadingPrimesFromResultFileFinished for the object loading existing prime numbers.
+        /// </summary>
+        /// <param name="loader">The object loading the existing prime numbers.</param>
+        /// <param name="args">The information about the event.</param>
+        private void Loader_OnLoadingPrimesFromResultFileFinished(object loader, LoadingPrimesFromResultFileFinishedArgs args)
+        {
+            OnLoadingPrimesFromResultFileFinished?.Invoke(loader, args);
+        }
+
+        /// <summary>
+        /// Handles the OnLoadingPrimesFromFile for the object loading existing prime numbers.
+        /// </summary>
+        /// <param name="loader">The object loading the existing prime numbers.</param>
+        /// <param name="args">The information about the event.</param>
+        private void Loader_OnLoadingPrimesFromFile(object loader, PrimesLoadingFromFile args)
+        {
+            OnLoadingPrimesFromFile?.Invoke(loader, args);
         }
 
         /// <summary>
@@ -331,7 +358,7 @@ namespace PrimeNumberGenerator
         {
             //Write the primes to a file.
             var primesToWrite = allKnownPrimes.GetRange(startIndex, amountOfPrimesToWrite);
-            var filename = String.Format("{0}{1}.txt", RESULT_FILE_NAME_START, newFileIndex);
+            var filename = String.Format("{0}{1}{2}", Configuration.ResultFileNameStart, newFileIndex, Configuration.ResultFileExtension);
 
             if (!theFileShouldExists && File.Exists(filename))
             {
@@ -353,124 +380,6 @@ namespace PrimeNumberGenerator
             //Inform the subscriber that a result file was created.
             var args = new PrimesWrittenToFileArgs(newFileIndex, startIndex, startIndex + amountOfPrimesToWrite - 1, DateTime.Now, duration);
             OnPrimesWrittenToFile?.Invoke(this, args);
-        }
-
-        /// <summary>
-        /// Fetches prime numbers from existing result files.
-        /// </summary>
-        /// <returns>Tuple telling if the generation should continue, and holding the already generated primes.</returns>
-        private Tuple<bool, List<BigInteger>, BigInteger> fetchExistingPrimes()
-        {
-            //TODO: Make a custom return class for this method.
-
-            var primes = new List<BigInteger>((int)Math.Pow(2, 20));
-            var nextNumberToCheck = new BigInteger(0);
-
-            var resultFiles = fetchResultFilePaths();
-            for (int i = 0; i < resultFiles.Count; i++)
-            {
-                var args = new PrimesLoadingFromFile(i, resultFiles.Count);
-                OnLoadingPrimesFromFile?.Invoke(this, args);
-
-                var subPrimes = File
-                    .ReadAllLines(resultFiles[i])
-                    .Select(l => BigInteger.Parse(l));
-
-                if (subPrimes.Any())
-                {
-                    nextNumberToCheck = subPrimes.Last() + 1;
-                }
-                else
-                {
-                    //TODO: Test this use case.
-                    return new Tuple<bool, List<BigInteger>, BigInteger>(true, primes, nextNumberToCheck);
-                }
-
-                try
-                {
-                    primes.AddRange(subPrimes);
-                }
-                catch (OutOfMemoryException ex)
-                {
-                    if (memoryIsFilledWithPrimes(ex))
-                    {
-                        MemoryLimitReached = true;
-
-                        //Find the last number we were to check.
-                        var lastPrime = File
-                            .ReadAllLines(resultFiles.Last())
-                            .Select(l => BigInteger.Parse(l))
-                            .LastOrDefault();
-                        var lastNextNumberToCheck = lastPrime + 1;
-
-                        if (lastNextNumberToCheck < nextNumberToCheck)
-                        {
-                            throw new InvalidOperationException();
-                        }
-
-                        nextNumberToCheck = lastNextNumberToCheck;
-
-                        return new Tuple<bool, List<BigInteger>, BigInteger>(true, primes, nextNumberToCheck);
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-
-                if (Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Escape)
-                {
-                    //The user cancelled the execution.
-                    return new Tuple<bool, List<BigInteger>, BigInteger>(false, null, 0);
-                }
-            }
-
-            return new Tuple<bool, List<BigInteger>, BigInteger>(true, primes, nextNumberToCheck);
-        }
-
-        /// <summary>
-        /// Fetches the file paths of existing result files.
-        /// </summary>
-        /// <returns>The paths to the existing result files.</returns>
-        private static List<string> fetchResultFilePaths()
-        {
-            var files = new SortedDictionary<int, string>();
-
-            var allFiles = Directory.GetFiles(Directory.GetCurrentDirectory());
-            foreach (var filepath in allFiles)
-            {
-                var fileName = Path.GetFileNameWithoutExtension(filepath);
-
-                if (fileName.Length <= RESULT_FILE_NAME_START.Length
-                    || !fileName.StartsWith(RESULT_FILE_NAME_START)
-                    || Path.GetExtension(filepath) != ".txt")
-                {
-                    continue;
-                }
-
-                var fileID = fileName.Substring(RESULT_FILE_NAME_START.Length);
-                int fileNumber;
-
-                if (!int.TryParse(fileID, out fileNumber))
-                {
-                    continue;
-                }
-
-                files.Add(fileNumber, filepath);
-            }
-
-            var i = 1;
-            var consecutiveFiles = files
-                .Where(f => f.Key == i++)
-                .Select(f => f.Value)
-                .ToList();
-
-            return consecutiveFiles;
-        }
-
-        private static bool memoryIsFilledWithPrimes(OutOfMemoryException ex)
-        {
-            return ex.TargetSite.Name == "set_Capacity";
         }
     }
 }

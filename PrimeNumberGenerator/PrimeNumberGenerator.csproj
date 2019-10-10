@@ -43,14 +43,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration.cs" />
     <Compile Include="EventArgs\LoadingPrimesFromResultFileFinishedArgs.cs" />
     <Compile Include="EventArgs\LoadingPrimesFromResultFileStartedArgs.cs" />
     <Compile Include="EventArgs\PrimeGenerationStartedArgs.cs" />
     <Compile Include="EventArgs\PrimesLoadingFromFile.cs" />
+    <Compile Include="ExistingPrimesLoader.cs" />
+    <Compile Include="ExistingPrimesLoadingResult.cs" />
     <Compile Include="PrimeGenerator.cs" />
     <Compile Include="EventArgs\PrimesWrittenToFileArgs.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Tools.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
