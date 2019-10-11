@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace PrimeNumberGenerator
@@ -34,8 +33,12 @@ namespace PrimeNumberGenerator
             //Store if the number is a prime.
             var isPrime = true;
 
+            //Find out if the cache is big enough to contain a factor.
+            var lastPrime = cachedPrimesSortedAsc.Last();
+            var cacheSpansAllFactors = lastPrime * lastPrime >= numberToCheck;
+
             //Find the primes small enough to be a factor.
-            List<BigInteger> primesToUse = findPrimesToUse(cachedPrimesSortedAsc, numberToCheck);
+            var primesToUse = cacheSpansAllFactors ? findPrimesToUse(cachedPrimesSortedAsc, numberToCheck) : cachedPrimesSortedAsc;
 
             //Find out if the number is a prime.
             Parallel.ForEach(primesToUse, (prime, state) =>
@@ -46,8 +49,8 @@ namespace PrimeNumberGenerator
                     state.Stop();
                 }
             });
-            
-            return isPrime;
+
+            return cacheSpansAllFactors ? isPrime : checkNumberUsingDisk(cachedPrimesSortedAsc.Count, numberToCheck);
         }
 
         /// <summary>
@@ -63,7 +66,7 @@ namespace PrimeNumberGenerator
                 return cachedPrimesSortedAsc;
             }
 
-            var upperLimit = cachedPrimesSortedAsc.Count() - 1;
+            var upperLimit = cachedPrimesSortedAsc.Count - 1;
             var lowerLimit = 0;
 
             do
@@ -88,6 +91,11 @@ namespace PrimeNumberGenerator
             } while (upperLimit - lowerLimit > 1);
 
             return cachedPrimesSortedAsc.GetRange(0, upperLimit);
+        }
+
+        private static bool checkNumberUsingDisk(int amountOfCachedPrimes, BigInteger numberToCheck)
+        {
+            throw new NotImplementedException();
         }
     }
 }
