@@ -24,9 +24,9 @@ namespace PrimeNumberGenerator
         private DateTime LastFileWrite;
 
         /// <summary>
-        /// All found primes.
+        /// The first prime numbers, cached in computer memory.
         /// </summary>
-        public List<BigInteger> Primes { get; private set; }
+        public List<BigInteger> ChachedPrimes { get; private set; }
 
         /// <summary>
         /// Tells if the memory limit is reached, indiciating the memory can't hold any more prime numbers.
@@ -121,7 +121,7 @@ namespace PrimeNumberGenerator
             if (loadResult.ExecutionWasAborted) { return; }
 
             //Extract the data from the loading result.
-            Primes = loadResult.CachedPrimes;
+            ChachedPrimes = loadResult.CachedPrimes;
             MemoryLimitReached = loadResult.MemoryLimitReached;
             NextFileIndex = loadResult.IndexOfLastResultFileToStoreIn;
             var numberToCheck = loadResult.NextNumberToCheck;
@@ -142,7 +142,7 @@ namespace PrimeNumberGenerator
                     Func<bool> memoryIteration = delegate ()
                     {
                         //Check if the number is a prime.
-                        isPrime = isPrimeNumber(Primes, numberToCheck);
+                        isPrime = isPrimeNumber(ChachedPrimes, numberToCheck);
 
                         //Handle prime find.
                         if (isPrime)
@@ -150,7 +150,7 @@ namespace PrimeNumberGenerator
                             try
                             {
                                 //Add the prime to the list.
-                                Primes.Add(numberToCheck);
+                                ChachedPrimes.Add(numberToCheck);
                             }
                             catch (OutOfMemoryException ex)
                             {
@@ -170,10 +170,10 @@ namespace PrimeNumberGenerator
                             }
 
                             //Write the primes to a file for reading by the user.
-                            if (Primes.Count % Configuration.NumberOfPrimesInFile == 0)
+                            if (ChachedPrimes.Count % Configuration.NumberOfPrimesInFile == 0)
                             {
                                 var startIndex = Configuration.NumberOfPrimesInFile * NextFileIndex - Configuration.NumberOfPrimesInFile;
-                                writePrimesToFile(Primes, startIndex, Configuration.NumberOfPrimesInFile, NextFileIndex, false);
+                                writePrimesToFile(ChachedPrimes, startIndex, Configuration.NumberOfPrimesInFile, NextFileIndex, false);
                                 NextFileIndex++;
                             }
                         }
@@ -190,12 +190,12 @@ namespace PrimeNumberGenerator
                     if (!MemoryLimitReached) { return; }
 
                     //Store the unstored primes.
-                    long amountOfPrimesFound = Primes.Count;
-                    var amountOfUnstoredPrimes = Primes.Count % Configuration.NumberOfPrimesInFile;
+                    long amountOfPrimesFound = ChachedPrimes.Count;
+                    var amountOfUnstoredPrimes = ChachedPrimes.Count % Configuration.NumberOfPrimesInFile;
                     if (amountOfUnstoredPrimes > 0)
                     {
-                        var indexOfFirstUnstoredPrime = Primes.Count - amountOfUnstoredPrimes;
-                        writePrimesToFile(Primes, indexOfFirstUnstoredPrime, amountOfUnstoredPrimes, NextFileIndex, false);
+                        var indexOfFirstUnstoredPrime = ChachedPrimes.Count - amountOfUnstoredPrimes;
+                        writePrimesToFile(ChachedPrimes, indexOfFirstUnstoredPrime, amountOfUnstoredPrimes, NextFileIndex, false);
                     }
 
                     //Store the prime that cause the memory overflow.
@@ -276,10 +276,10 @@ namespace PrimeNumberGenerator
         /// <summary>
         /// Finds out if a number is a prime.
         /// </summary>
-        /// <param name="allKnownPrimesSortedAsc">All known primes up to this point, sorted from small to big.</param>
+        /// <param name="cachedPrimesSortedAsc">The first primes, sorted from small to big.</param>
         /// <param name="numberToCheck">The number that may be a prime.</param>
         /// <returns>TRUE if the number is a prime, else FALSE.</returns>
-        private static bool isPrimeNumber(List<BigInteger> allKnownPrimesSortedAsc, BigInteger numberToCheck)
+        private static bool isPrimeNumber(List<BigInteger> cachedPrimesSortedAsc, BigInteger numberToCheck)
         {
             //Handle special cases.
             if (numberToCheck < 2) { return false; }
@@ -290,7 +290,7 @@ namespace PrimeNumberGenerator
             var isPrime = true;
 
             //Find the primes small enough to be a factor.
-            List<BigInteger> primesToUse = findPrimesToUse(allKnownPrimesSortedAsc, numberToCheck);
+            List<BigInteger> primesToUse = findPrimesToUse(cachedPrimesSortedAsc, numberToCheck);
 
             //Find out if the number is a prime.
             Parallel.ForEach(primesToUse, (prime, state) =>
