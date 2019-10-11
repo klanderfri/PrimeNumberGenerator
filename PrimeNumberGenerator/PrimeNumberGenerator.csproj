@@ -50,6 +50,7 @@
     <Compile Include="EventArgs\PrimesLoadingFromFile.cs" />
     <Compile Include="ExistingPrimesLoader.cs" />
     <Compile Include="ExistingPrimesLoadingResult.cs" />
+    <Compile Include="PrimeChecker.cs" />
     <Compile Include="PrimeGenerator.cs" />
     <Compile Include="EventArgs\PrimesWrittenToFileArgs.cs" />
     <Compile Include="Program.cs" />
