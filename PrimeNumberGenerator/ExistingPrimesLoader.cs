@@ -60,7 +60,7 @@ namespace PrimeNumberGenerator
             OnLoadingPrimesFromResultFileStarted?.Invoke(this, startingArgs);
 
             //Find the result files.
-            var indexedResultFiles = fetchResultFilePaths();
+            var indexedResultFiles = ResultFileHandler.FetchResultFilePaths();
 
             //Load the existing primes.
             var result = fetchPrimes(indexedResultFiles);
@@ -220,46 +220,6 @@ namespace PrimeNumberGenerator
             result.NextNumberToCheck = nextNumberToCheck;
 
             return result;
-        }
-
-        /// <summary>
-        /// Fetches the file paths of existing result files.
-        /// </summary>
-        /// <returns>The paths to the existing result files.</returns>
-        private static List<KeyValuePair<int, string>> fetchResultFilePaths()
-        {
-            var files = new SortedDictionary<int, string>();
-
-            var allFiles = Directory.GetFiles(Directory.GetCurrentDirectory());
-            foreach (var filepath in allFiles)
-            {
-                var fileName = Path.GetFileNameWithoutExtension(filepath);
-
-                if (fileName.Length <= Configuration.ResultFileNameStart.Length
-                    || !fileName.StartsWith(Configuration.ResultFileNameStart)
-                    || Path.GetExtension(filepath) != Configuration.ResultFileExtension)
-                {
-                    continue;
-                }
-
-                var fileID = fileName.Substring(Configuration.ResultFileNameStart.Length);
-                int fileNumber;
-
-                if (!int.TryParse(fileID, out fileNumber))
-                {
-                    continue;
-                }
-
-                files.Add(fileNumber, filepath);
-            }
-
-            var i = 1;
-            var consecutiveFiles = files
-                .Where(f => f.Key == i++)
-                .Select(f => f)
-                .ToList();
-
-            return consecutiveFiles;
         }
     }
 }
