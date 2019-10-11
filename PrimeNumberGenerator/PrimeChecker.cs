@@ -15,12 +15,21 @@ namespace PrimeNumberGenerator
         /// <param name="cachedPrimesSortedAsc">The first primes, sorted from small to big.</param>
         /// <param name="numberToCheck">The number that may be a prime.</param>
         /// <returns>TRUE if the number is a prime, else FALSE.</returns>
+        /// <remarks>This method assumes <paramref name="cachedPrimesSortedAsc"/> contains ALL primes smaller than the last prime in the list.</remarks>
         public static bool IsPrimeNumber(List<BigInteger> cachedPrimesSortedAsc, BigInteger numberToCheck)
         {
             //Handle special cases.
             if (numberToCheck < 2) { return false; }
             if (numberToCheck == 2) { return true; }
             if (numberToCheck.IsEven) { return false; }
+
+            //Make sure we got any cached primes at all.
+            if (!cachedPrimesSortedAsc.Any())
+            {
+                var format = "The argument '{0}' didn't contain any values.";
+                var message = String.Format(format, nameof(cachedPrimesSortedAsc));
+                throw new ArgumentException(message);
+            }
 
             //Store if the number is a prime.
             var isPrime = true;
@@ -37,7 +46,7 @@ namespace PrimeNumberGenerator
                     state.Stop();
                 }
             });
-
+            
             return isPrime;
         }
 
