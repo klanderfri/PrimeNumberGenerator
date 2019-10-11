@@ -93,6 +93,12 @@ namespace PrimeNumberGenerator
             return cachedPrimesSortedAsc.GetRange(0, upperLimit);
         }
 
+        /// <summary>
+        /// Checks if the number is a prime by using the prime number result files stored on disk.
+        /// </summary>
+        /// <param name="amountOfCachedPrimes">The amount of primes that are cached in the computer memory.</param>
+        /// <param name="numberToCheck">The number that may be a prime.</param>
+        /// <returns>TRUE if the number is a prime, else FALSE.</returns>
         private static bool checkNumberUsingDisk(int amountOfCachedPrimes, BigInteger numberToCheck)
         {
             throw new NotImplementedException();
