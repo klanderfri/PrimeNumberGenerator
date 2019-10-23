@@ -16,7 +16,7 @@ namespace PrimeNumberGenerator
         /// <summary>
         /// The first prime numbers, cached in computer memory.
         /// </summary>
-        public List<BigInteger> ChachedPrimes { get; private set; }
+        public List<BigInteger> CachedPrimes { get; private set; }
 
         /// <summary>
         /// Tells if the memory limit is reached, indiciating the memory can't hold any more prime numbers.
@@ -120,7 +120,7 @@ namespace PrimeNumberGenerator
             if (loadResult.ExecutionWasAborted) { return; }
 
             //Extract the data from the loading result.
-            ChachedPrimes = loadResult.CachedPrimes;
+            CachedPrimes = loadResult.CachedPrimes;
             MemoryLimitReached = loadResult.MemoryLimitReached;
             var numberToCheck = loadResult.NextNumberToCheck;
 
@@ -137,13 +137,13 @@ namespace PrimeNumberGenerator
                 if (!MemoryLimitReached)
                 {
                     //Create variable keeping track of were the unstored primes begin.
-                    var indexOfFirstUnstoredPrime = ChachedPrimes.Count;
+                    var indexOfFirstUnstoredPrime = CachedPrimes.Count;
 
                     //Generate the first primes quickly by using only the computer memory.
                     Func<bool> memoryIteration = delegate ()
                     {
                         //Check if the number is a prime.
-                        isPrime = PrimeChecker.IsPrimeNumber(ChachedPrimes, numberToCheck);
+                        isPrime = PrimeChecker.IsPrimeNumber(CachedPrimes, numberToCheck);
 
                         //Handle prime find.
                         if (isPrime)
@@ -151,7 +151,7 @@ namespace PrimeNumberGenerator
                             try
                             {
                                 //Add the prime to the list.
-                                ChachedPrimes.Add(numberToCheck);
+                                CachedPrimes.Add(numberToCheck);
                             }
                             catch (OutOfMemoryException ex)
                             {
@@ -171,10 +171,10 @@ namespace PrimeNumberGenerator
                             }
 
                             //Write the primes to a file for reading by the user.
-                            if (ChachedPrimes.Count % Configuration.NumberOfPrimesInFile == 0)
+                            if (CachedPrimes.Count % Configuration.NumberOfPrimesInFile == 0)
                             {
-                                writePrimesToFile(ChachedPrimes, indexOfFirstUnstoredPrime, Configuration.NumberOfPrimesInFile);
-                                indexOfFirstUnstoredPrime = ChachedPrimes.Count;
+                                writePrimesToFile(CachedPrimes, indexOfFirstUnstoredPrime, Configuration.NumberOfPrimesInFile);
+                                indexOfFirstUnstoredPrime = CachedPrimes.Count;
                             }
                         }
 
@@ -190,7 +190,7 @@ namespace PrimeNumberGenerator
                     if (!MemoryLimitReached) { return; }
 
                     //Store the unstored primes.
-                    storeUnsavedPrimesAfterMemoryOverflow(ChachedPrimes, numberToCheck);
+                    storeUnsavedPrimesAfterMemoryOverflow(CachedPrimes, numberToCheck);
                 }
 
                 //Generate the rest of the primes by using the harddrive as memory.
