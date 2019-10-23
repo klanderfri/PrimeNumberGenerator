@@ -14,16 +14,6 @@ namespace PrimeNumberGenerator
     public class PrimeGenerator
     {
         /// <summary>
-        /// The index of the next result-file.
-        /// </summary>
-        private int NextFileIndex;
-
-        /// <summary>
-        /// The point in time when the last result-file was written.
-        /// </summary>
-        private DateTime LastFileWrite;
-
-        /// <summary>
         /// The first prime numbers, cached in computer memory.
         /// </summary>
         public List<BigInteger> ChachedPrimes { get; private set; }
@@ -32,6 +22,11 @@ namespace PrimeNumberGenerator
         /// Tells if the memory limit is reached, indiciating the memory can't hold any more prime numbers.
         /// </summary>
         private bool MemoryLimitReached { get; set; }
+
+        /// <summary>
+        /// Helper handling the files containing prime numbers.
+        /// </summary>
+        private ResultFileHandler FileHandler { get; set; }
 
         #region Events
 
@@ -66,9 +61,9 @@ namespace PrimeNumberGenerator
         /// <summary>
         /// Handler for the OnPrimesWrittenToFile-event.
         /// </summary>
-        /// <param name="generator">The generator causing the result-file to be written.</param>
+        /// <param name="handler">The handler causing the result-file to be written.</param>
         /// <param name="args">The information about the event.</param>
-        public delegate void PrimesWrittenToFileHandler(object generator, PrimesWrittenToFileArgs args);
+        public delegate void PrimesWrittenToFileHandler(object handler, PrimesWrittenToFileArgs args);
 
         /// <summary>
         /// Event raised when the generator has started loading primes from exisiting result files.
@@ -110,12 +105,16 @@ namespace PrimeNumberGenerator
         /// </summary>
         public void GeneratePrimes()
         {
+            //Set the handler handling the result files.
+            FileHandler = new ResultFileHandler();
+            FileHandler.OnPrimesWrittenToFile += FileHandler_OnPrimesWrittenToFile;
+
             //Load existing primes.
             var loader = new ExistingPrimesLoader();
             loader.OnLoadingPrimesFromResultFileStarted += Loader_OnLoadingPrimesFromResultFileStarted;
             loader.OnLoadingPrimesFromResultFileFinished += Loader_OnLoadingPrimesFromResultFileFinished;
             loader.OnLoadingPrimesFromFile += Loader_OnLoadingPrimesFromFile;
-            var loadResult = loader.FetchExistingPrimes();
+            var loadResult = loader.FetchExistingPrimes(FileHandler);
             
             //End the execution if the user aborted it.
             if (loadResult.ExecutionWasAborted) { return; }
@@ -123,21 +122,23 @@ namespace PrimeNumberGenerator
             //Extract the data from the loading result.
             ChachedPrimes = loadResult.CachedPrimes;
             MemoryLimitReached = loadResult.MemoryLimitReached;
-            NextFileIndex = loadResult.IndexOfLastResultFileToStoreIn;
             var numberToCheck = loadResult.NextNumberToCheck;
 
             //Setup variables for prime number generation.
-            LastFileWrite = DateTime.Now;
             bool isPrime = false;
 
             try
             {
                 //Inform the subscriber that the prime number generation has started.
                 OnPrimeGenerationStarted?.Invoke(this, new PrimeGenerationStartedArgs());
+                FileHandler.PrimeNumberGenerationHasStarted();
 
                 //Skip memory stored generation if the memory was filled by the already generated prime numbers.
                 if (!MemoryLimitReached)
                 {
+                    //Create variable keeping track of were the unstored primes begin.
+                    var indexOfFirstUnstoredPrime = ChachedPrimes.Count;
+
                     //Generate the first primes quickly by using only the computer memory.
                     Func<bool> memoryIteration = delegate ()
                     {
@@ -172,9 +173,8 @@ namespace PrimeNumberGenerator
                             //Write the primes to a file for reading by the user.
                             if (ChachedPrimes.Count % Configuration.NumberOfPrimesInFile == 0)
                             {
-                                var startIndex = Configuration.NumberOfPrimesInFile * NextFileIndex - Configuration.NumberOfPrimesInFile;
-                                writePrimesToFile(ChachedPrimes, startIndex, Configuration.NumberOfPrimesInFile, NextFileIndex, false);
-                                NextFileIndex++;
+                                writePrimesToFile(ChachedPrimes, indexOfFirstUnstoredPrime, Configuration.NumberOfPrimesInFile);
+                                indexOfFirstUnstoredPrime = ChachedPrimes.Count;
                             }
                         }
 
@@ -190,23 +190,7 @@ namespace PrimeNumberGenerator
                     if (!MemoryLimitReached) { return; }
 
                     //Store the unstored primes.
-                    long amountOfPrimesFound = ChachedPrimes.Count;
-                    var amountOfUnstoredPrimes = ChachedPrimes.Count % Configuration.NumberOfPrimesInFile;
-                    if (amountOfUnstoredPrimes > 0)
-                    {
-                        var indexOfFirstUnstoredPrime = ChachedPrimes.Count - amountOfUnstoredPrimes;
-                        writePrimesToFile(ChachedPrimes, indexOfFirstUnstoredPrime, amountOfUnstoredPrimes, NextFileIndex, false);
-                    }
-
-                    //Store the prime that cause the memory overflow.
-                    writePrimesToFile(new List<BigInteger>() { numberToCheck }, 0, 1, NextFileIndex, true);
-                    amountOfPrimesFound++;
-
-                    //Check if we have filled the file and need to continue on another.
-                    if (amountOfPrimesFound % Configuration.NumberOfPrimesInFile == 0)
-                    {
-                        NextFileIndex++;
-                    }
+                    storeUnsavedPrimesAfterMemoryOverflow(ChachedPrimes, numberToCheck);
                 }
 
                 //Generate the rest of the primes by using the harddrive as memory.
@@ -226,7 +210,38 @@ namespace PrimeNumberGenerator
         }
 
         /// <summary>
-        /// Handles the OnLoadingPrimesFromResultFileStarted for the object loading existing prime numbers.
+        /// Stores the unsaved primes to file after a memory overflow occured.
+        /// </summary>
+        /// <param name="foundPrimes">The container holding the prime numbers that have been found.</param>
+        /// <param name="primeCausingMemoryOverflow">The prime number that coused the memory overflow.</param>
+        private void storeUnsavedPrimesAfterMemoryOverflow(List<BigInteger> foundPrimes, BigInteger primeCausingMemoryOverflow)
+        {
+            //Find out how many primes are waiting to be stored in file.
+            var amountOfUnstoredPrimes = foundPrimes.Count % Configuration.NumberOfPrimesInFile;
+            
+            //Store the unsaved primes.
+            if (amountOfUnstoredPrimes > 0)
+            {
+                var indexOfFirstUnstoredPrime = foundPrimes.Count - amountOfUnstoredPrimes;
+                writePrimesToFile(foundPrimes, indexOfFirstUnstoredPrime, amountOfUnstoredPrimes);
+            }
+
+            //Store the prime that cause the memory overflow.
+            writePrimesToFile(new List<BigInteger>() { primeCausingMemoryOverflow }, 0, 1);
+        }
+
+        /// <summary>
+        /// Handles the OnPrimesWrittenToFile event for the object handling result files.
+        /// </summary>
+        /// <param name="handler">The object writing prime numbers to file.</param>
+        /// <param name="args">The information about the event.</param>
+        private void FileHandler_OnPrimesWrittenToFile(object handler, PrimesWrittenToFileArgs args)
+        {
+            OnPrimesWrittenToFile?.Invoke(handler, args);
+        }
+
+        /// <summary>
+        /// Handles the OnLoadingPrimesFromResultFileStarted event for the object loading existing prime numbers.
         /// </summary>
         /// <param name="loader">The object loading the existing prime numbers.</param>
         /// <param name="args">The information about the event.</param>
@@ -236,7 +251,7 @@ namespace PrimeNumberGenerator
         }
 
         /// <summary>
-        /// Handles the OnLoadingPrimesFromResultFileFinished for the object loading existing prime numbers.
+        /// Handles the OnLoadingPrimesFromResultFileFinished event for the object loading existing prime numbers.
         /// </summary>
         /// <param name="loader">The object loading the existing prime numbers.</param>
         /// <param name="args">The information about the event.</param>
@@ -246,7 +261,7 @@ namespace PrimeNumberGenerator
         }
 
         /// <summary>
-        /// Handles the OnLoadingPrimesFromFile for the object loading existing prime numbers.
+        /// Handles the OnLoadingPrimesFromFile event for the object loading existing prime numbers.
         /// </summary>
         /// <param name="loader">The object loading the existing prime numbers.</param>
         /// <param name="args">The information about the event.</param>
@@ -276,38 +291,13 @@ namespace PrimeNumberGenerator
         /// <summary>
         /// Writes a number of primes to a file.
         /// </summary>
-        /// <param name="allKnownPrimes">All known primes up to this point.</param>
+        /// <param name="primeNumberCollection">A range of prime numbers of which some should be written to a file.</param>
         /// <param name="startIndex">The index of the first prime to write.</param>
         /// <param name="amountOfPrimesToWrite">The amount of primes to write.</param>
-        /// <param name="newFileIndex">The index the new result file should have.</param>
-        /// <param name="theFileShouldExists">Tells if the file is expected to already exist.</param>
-        /// TODO: Move to the program file and replace with event. The generator shouldn't handle file input/output.
-        private void writePrimesToFile(List<BigInteger> allKnownPrimes, int startIndex, int amountOfPrimesToWrite, int newFileIndex, bool theFileShouldExists)
+        private void writePrimesToFile(List<BigInteger> primeNumberCollection, int startIndex, int amountOfPrimesToWrite)
         {
-            //Write the primes to a file.
-            var primesToWrite = allKnownPrimes.GetRange(startIndex, amountOfPrimesToWrite);
-            var filename = String.Format("{0}{1}{2}", Configuration.ResultFileNameStart, newFileIndex, Configuration.ResultFileExtension);
-
-            if (!theFileShouldExists && File.Exists(filename))
-            {
-                var format = "Tried to write to the existing file '{0}'.";
-                var message = String.Format(format, filename);
-                throw new InvalidOperationException(message);
-            }
-
-            using (var stream = new StreamWriter(filename, true))
-            {
-                foreach (var prime in primesToWrite)
-                {
-                    stream.WriteLine(prime);
-                }
-            }
-            var duration = DateTime.Now - LastFileWrite;
-            LastFileWrite = DateTime.Now;
-
-            //Inform the subscriber that a result file was created.
-            var args = new PrimesWrittenToFileArgs(newFileIndex, startIndex, startIndex + amountOfPrimesToWrite - 1, DateTime.Now, duration);
-            OnPrimesWrittenToFile?.Invoke(this, args);
+            var primesToWrite = primeNumberCollection.GetRange(startIndex, amountOfPrimesToWrite);
+            FileHandler.WritePrimesToFile(primesToWrite);
         }
     }
 }

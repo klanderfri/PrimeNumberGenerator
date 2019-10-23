@@ -50,6 +50,12 @@ namespace PrimeNumberGenerator
                 }
             });
 
+            //We can stop searching if we have confirmed that the number is NOT a prime number.
+            if (!isPrime)
+            {
+                return false;
+            }
+
             return cacheSpansAllFactors ? isPrime : checkNumberUsingDisk(cachedPrimesSortedAsc.Count, numberToCheck);
         }
 

@@ -52,21 +52,19 @@ namespace PrimeNumberGenerator
         /// <summary>
         /// Fetches prime numbers from existing result files.
         /// </summary>
+        /// <param name="fileHandler">The object handling the result files.</param>
         /// <returns>Container holding information about the loaded prime numbers.</returns>
-        public ExistingPrimesLoadingResult FetchExistingPrimes()
+        public ExistingPrimesLoadingResult FetchExistingPrimes(ResultFileHandler fileHandler)
         {
             //Tell the user the loading has started.
             var startingArgs = new LoadingPrimesFromResultFileStartedArgs();
             OnLoadingPrimesFromResultFileStarted?.Invoke(this, startingArgs);
 
-            //Find the result files.
-            var indexedResultFiles = ResultFileHandler.FetchResultFilePaths();
-
             //Load the existing primes.
-            var result = fetchPrimes(indexedResultFiles);
+            var result = fetchPrimes(fileHandler.ResultFiles);
 
             //Store the index of the last result file with room for more prime numbers.
-            result.IndexOfLastResultFileToStoreIn = findFirstStorableFileIndex(indexedResultFiles);
+            result.IndexOfLastResultFileToStoreIn = findFirstStorableFileIndex(fileHandler.ResultFiles);
 
             //Tell the user that the loading finished.
             int numberOfPrimesLoaded = result.CachedPrimes.Count;
@@ -83,7 +81,7 @@ namespace PrimeNumberGenerator
         /// </summary>
         /// <param name="indexedResultFiles">All the result files accompanied with their index.</param>
         /// <returns>Container holding information about the loaded prime numbers.</returns>
-        private ExistingPrimesLoadingResult fetchPrimes(List<KeyValuePair<int, string>> indexedResultFiles)
+        private ExistingPrimesLoadingResult fetchPrimes(SortedDictionary<int, string> indexedResultFiles)
         {
             var result = new ExistingPrimesLoadingResult();
             
@@ -114,7 +112,7 @@ namespace PrimeNumberGenerator
                 }
 
                 //Store the loaded primes.
-                result = storeSubPrimes(result, subPrimes, lastResultFile);
+                result = storeSubPrimesInMemory(result, subPrimes, lastResultFile);
 
                 //There's no use in loading any more primes if the memory is full.
                 if (result.MemoryLimitReached)
@@ -169,7 +167,7 @@ namespace PrimeNumberGenerator
         /// <param name="subPrimes">The prime numbers to add to the container.</param>
         /// <param name="lastResultFile">The last result file.</param>
         /// <returns>The loading result container.</returns>
-        private static ExistingPrimesLoadingResult storeSubPrimes(ExistingPrimesLoadingResult result, IEnumerable<BigInteger> subPrimes, string lastResultFile)
+        private static ExistingPrimesLoadingResult storeSubPrimesInMemory(ExistingPrimesLoadingResult result, IEnumerable<BigInteger> subPrimes, string lastResultFile)
         {
             try
             {
@@ -181,10 +179,8 @@ namespace PrimeNumberGenerator
                 {
                     return handleMemoryOverflow(result, lastResultFile);
                 }
-                else
-                {
-                    throw;
-                }
+
+                throw;
             }
 
             return result;
