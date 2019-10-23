@@ -68,7 +68,7 @@ namespace PrimeNumberGenerator
 
             //Tell the user that the loading finished.
             int numberOfPrimesLoaded = result.CachedPrimes.Count;
-            int numberOfResultFilesLoaded = result.CachedPrimes.Count / Configuration.NumberOfPrimesInFile;
+            int numberOfResultFilesLoaded = (int)Math.Ceiling(result.CachedPrimes.Count / (decimal)Configuration.NumberOfPrimesInFile);
             var loadingFinishedArgs = new LoadingPrimesFromResultFileFinishedArgs(numberOfPrimesLoaded, numberOfResultFilesLoaded);
             OnLoadingPrimesFromResultFileFinished?.Invoke(this, loadingFinishedArgs);
 
