@@ -29,7 +29,7 @@ namespace PrimeNumberGenerator
         /// <summary>
         /// The index of the last result file to store prime numbers in.
         /// </summary>
-        /// <remarks>The file with this index may or may not exist.</remarks>
+        /// <remarks>The file with this one-based index may or may not exist.</remarks>
         public int IndexOfLastResultFileToStoreIn { get; set; }
 
         public ExistingPrimesLoadingResult()

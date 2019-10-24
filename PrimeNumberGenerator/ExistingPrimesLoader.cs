@@ -136,6 +136,7 @@ namespace PrimeNumberGenerator
         /// </summary>
         /// <param name="resultFiles">A list of all existing result files.</param>
         /// <returns>The index of the last result file with room left for more prime numbers.</returns>
+        /// <remarks>This index is one-based since it should be put in the file name of the result file, i.e being visible for the user.</remarks>
         private static int findFirstStorableFileIndex(IEnumerable<KeyValuePair<int, string>> resultFiles)
         {
             if (!resultFiles.Any())
